@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Service Blueprint Tool</title>
+    <!-- Use Inter font to match design system -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Use system local fonts per GDPR requirement -->
+    <style>
+        /* ═══════════════════════════════════════════
+           TOKENS — Dark Theme (default)
+        ═══════════════════════════════════════════ */
+        :root {
+            --teal: #0e97ad;
+            --sky: #0ea5e9;
+            --light: #b0cfe5;
+            --navy: #2a314d;
+            --deep: #0B162A;
+
+            /* semantic */
+            --bg: #020617;
+            --bg-2: #1a2235;
+            --bg-3: #1e2c42;
+            --text: #e8eef5;
+            --text-muted: #7a91ab;
+            --border: rgba(176, 207, 229, 0.12);
+            --glow: rgba(14, 151, 173, 0.18);
+            --accent: var(--teal);
+            --accent-2: var(--sky);
+            --input-bg: #1e2c42;
+            --shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+            --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+            --grid-color: rgba(14, 151, 173, 0.035);
+
+            --sky-blue: #0ea5e9;
+            /* Precise accent color from design system */
+        }
+
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-size: 15px;
+            line-height: 1.6;
+            height: 100vh;
+            /* Explicit height to restrict container growth */
+            max-height: 100vh;
+            margin: 0;
+            transition: background 0.35s ease, color 0.35s ease;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            /* App takes full screen, blueprint scrolls inside */
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                linear-gradient(var(--grid-color) 1px, transparent 1px),
+                linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+            z-index: 0;
+            transition: opacity 0.35s;
+        }
+
+        /* ── Header ── */
+        header {
+            background: color-mix(in srgb, var(--bg) 80%, transparent);
+            backdrop-filter: blur(14px);
+            -webkit-backdrop-filter: blur(14px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            height: 64px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 24px;
+        }
+
+        .logo {
+            font-family: 'Inter', sans-serif;
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: normal;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+        }
+
+        .logo a {
+            text-decoration: none;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            transition: opacity 0.2s;
+        }
+
+        .logo a:hover {
+            opacity: 0.7;
+        }
+
+        .logo .suite {
+            color: var(--sky-blue);
+        }
+
+        .logo-separator {
+            color: var(--text-muted);
+            margin: 0 8px;
+            font-weight: normal;
+        }
+
+        .app-name {
+            color: var(--text);
+        }
+
+        .app-name-accent {
+            color: var(--sky-blue);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        /* ── Buttons ── */
+        .btn {
+            background: var(--bg-3);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn:hover {
+            background: var(--accent);
+            color: #fff;
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            background: var(--sky-blue);
+            color: #020617;
+            border-color: var(--sky-blue);
+        }
+
+        .btn-primary:hover {
+            background: var(--sky);
+            border-color: var(--sky);
+        }
+
+        /* ── Main Workspace ── */
+        main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 24px;
+            z-index: 1;
+            overflow: hidden;
+            /* Container should not scroll, the wrapper inside does */
+            min-height: 0;
+            /* Required for nested flex scrolling */
+            min-width: 0;
+        }
+
+        /* ── Blueprint Grid ── */
+        .blueprint-wrapper {
+            flex: 1;
+            overflow: auto;
+            /* Scroll horizontally and vertically */
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            background: var(--bg);
+            box-shadow: var(--shadow-sm);
+            min-height: 0;
+            /* Required for nested flex scrolling */
+            min-width: 0;
+        }
+
+        .blueprint-grid {
+            display: grid;
+            /* Default configuration: 250px for labels, 3 phases of 300px each + 1 add button = 4 */
+            grid-template-columns: 250px repeat(4, 300px);
+            background: var(--text-muted);
+            /* Used as gap color for better contrast */
+            gap: 1px;
+            width: max-content;
+            /* Ensure the grid doesn't stretch past its columns, preventing gap background leakage */
+            min-width: max-content;
+            border-right: 1px solid var(--text-muted); /* Adds the missing right line */
+        }
+
+        /* ── Scrollbars ── */
+        .blueprint-wrapper::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        .blueprint-wrapper::-webkit-scrollbar-track {
+            background: var(--bg-2);
+            border-radius: 4px;
+        }
+
+        .blueprint-wrapper::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
+        }
+
+        .blueprint-wrapper::-webkit-scrollbar-thumb:hover {
+            background: var(--text-muted);
+        }
+
+        /* Cells */
+        .bp-cell {
+            background: var(--bg);
+            padding: 16px;
+            min-height: 120px;
+            display: flex;
+            flex-direction: column;
+            gap: 0px;
+        }
+
+        /* Top Left Corner */
+        .bp-corner {
+            position: sticky;
+            top: 0;
+            left: 0;
+            z-index: 3;
+            background: var(--bg-2);
+            padding: 16px;
+            font-weight: 700;
+            color: var(--text-muted);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        /* Phase Headers (top row) */
+        .bp-phase-header {
+            position: sticky;
+            top: 0;
+            z-index: 2;
+            background: var(--bg-2);
+            padding: 16px;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .bp-phase-header-title {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 16px;
+        }
+
+        .phase-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .icon-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+        }
+
+        .icon-btn:hover {
+            color: var(--text);
+            background: var(--bg-3);
+        }
+
+        /* Lane Labels (left column) */
+        .bp-lane-header {
+            position: sticky;
+            left: 0;
+            z-index: 2;
+            background: var(--bg-2);
+            padding: 16px;
+            font-weight: 500;
+            border-right: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .lane-title {
+            color: #ffffff;
+        }
+
+        /* Placeholders for cards */
+        .card-placeholder {
+            border: none;
+            padding: 8px 0;
+            color: rgba(255, 255, 255, 0.45); /* Brighter than muted, less gray */
+            font-size: 13px;
+            text-align: left;
+            cursor: pointer;
+            transition: color 0.2s ease, opacity 0.2s ease;
+            opacity: 1;
+            margin-top: auto;
+        }
+
+        .card-placeholder:hover {
+            color: var(--sky-blue);
+            opacity: 1;
+        }
+
+        /* Blueprint List Items (formerly Cards) */
+        .bp-item {
+            background: transparent;
+            border: none;
+            padding: 0;
+            /* Minimal padding for maximum compactness */
+            margin-bottom: 0;
+            font-size: 14px;
+            position: relative;
+            cursor: pointer;
+            word-wrap: break-word;
+            white-space: pre-wrap;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 2px;
+            line-height: 1.2;
+            color: var(--text);
+            border-radius: 0;
+            box-shadow: none;
+            min-height: auto;
+        }
+
+        .bp-item-content {
+            flex: 1;
+            display: flex;
+            align-items: flex-start;
+        }
+
+        .bp-item-content::before {
+            content: '›';
+            color: #7a91ab;
+            margin-right: 6px;
+            font-size: 16px;
+            font-weight: 600;
+            line-height: 1.25;
+            flex-shrink: 0;
+        }
+
+        .bp-item-controls {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-shrink: 0;
+            background: transparent;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.15s ease;
+        }
+
+        .bp-item:hover .bp-item-controls {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        /* ── Status Badge ── */
+        .status-badge {
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            padding: 4px 12px;
+            border-radius: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            width: max-content;
+            transition: all 0.2s ease;
+            background: var(--badge-bg, rgba(0, 0, 0, 0.1));
+            color: var(--badge-text, inherit);
+            border: 1px solid var(--badge-border, transparent);
+        }
+
+        .status-badge:hover {
+            filter: brightness(1.2);
+        }
+
+        .status-chevron {
+            font-size: 10px;
+            opacity: 0.7;
+        }
+
+        /* ── Custom Modal ── */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            z-index: 9999;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.active {
+            display: flex;
+        }
+
+        .modal-box {
+            background: var(--bg-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 24px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: var(--shadow);
+            color: var(--text);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .modal-input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-family: inherit;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .modal-input:focus {
+            border-color: var(--sky-blue);
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 12px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal-box">
+            <div class="modal-title" id="modalTitle">Titel</div>
+            <textarea class="modal-input" id="modalInput" rows="4" style="resize: vertical;"></textarea>
+            <div class="modal-actions">
+                <button class="btn" id="modalCancel">Abbrechen</button>
+                <button class="btn btn-primary" id="modalOk">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="logo">
+            <a href="https://desk-suite.wissen-und-werkzeug.de/">DESK<span class="suite">suite</span></a>
+            <span class="logo-separator">›</span>
+            <span class="app-name">Blue<span class="app-name-accent">DESK</span></span>
+        </div>
+        <div class="header-actions">
+            <label class="btn" for="jsonUpload" style="cursor: pointer; margin-bottom: 0;">JSON Laden</label>
+            <input type="file" id="jsonUpload" accept=".json" style="display: none;" onchange="importJSON(event)">
+            <button class="btn btn-primary" onclick="exportJSON()">JSON Export</button>
+        </div>
+    </header>
+
+    <main>
+        <div class="blueprint-wrapper">
+            <div class="blueprint-grid" id="blueprintGrid">
+                <!-- Javascript will populate this grid -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        function customPrompt(title, defaultValue = '') {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('modalOverlay');
+                const titleEl = document.getElementById('modalTitle');
+                const inputEl = document.getElementById('modalInput');
+                const cancelBtn = document.getElementById('modalCancel');
+                const okBtn = document.getElementById('modalOk');
+
+                titleEl.textContent = title;
+                inputEl.style.display = 'block';
+                inputEl.value = defaultValue;
+                overlay.classList.add('active');
+                inputEl.focus();
+
+                const cleanup = () => {
+                    overlay.classList.remove('active');
+                    cancelBtn.onclick = null;
+                    okBtn.onclick = null;
+                };
+
+                cancelBtn.onclick = () => {
+                    cleanup();
+                    resolve(null);
+                };
+
+                okBtn.onclick = () => {
+                    cleanup();
+                    resolve(inputEl.value);
+                };
+            });
+        }
+
+        function customConfirm(title) {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('modalOverlay');
+                const titleEl = document.getElementById('modalTitle');
+                const inputEl = document.getElementById('modalInput');
+                const cancelBtn = document.getElementById('modalCancel');
+                const okBtn = document.getElementById('modalOk');
+
+                titleEl.textContent = title;
+                inputEl.style.display = 'none';
+                overlay.classList.add('active');
+
+                const cleanup = () => {
+                    overlay.classList.remove('active');
+                    cancelBtn.onclick = null;
+                    okBtn.onclick = null;
+                };
+
+                cancelBtn.onclick = () => {
+                    cleanup();
+                    resolve(false);
+                };
+
+                okBtn.onclick = () => {
+                    cleanup();
+                    resolve(true);
+                };
+            });
+        }
+
+        // Phase 1: State Setup
+        const defaultLanes = [
+            { id: 'lane-1', name: 'Physical Evidence' },
+            { id: 'lane-2', name: 'Customer Actions' },
+            { id: 'lane-3', name: 'Frontstage' },
+            { id: 'lane-4', name: 'Backstage' },
+            { id: 'lane-5', name: 'Support Processes' },
+            { id: 'lane-6', name: 'Pain Points' },
+            { id: 'lane-7', name: 'Chancen' }
+        ];
+
+        const defaultPhases = [
+            { id: 'phase-1', name: 'Awareness', status: 'planung' },
+            { id: 'phase-2', name: 'Join', status: 'planung' },
+            { id: 'phase-3', name: 'Use', status: 'planung' }
+        ];
+
+        let state = {
+            phases: [...defaultPhases],
+            lanes: [...defaultLanes],
+            cells: {} // Key: phaseId_laneId, Value: array of card objects
+        };
+
+        const gridEl = document.getElementById('blueprintGrid');
+
+        async function addPhase() {
+            const name = await customPrompt("Name der neuen Phase:");
+            if (!name || name.trim() === '') return;
+            const newId = 'phase-' + Date.now();
+            state.phases.push({ id: newId, name: name.trim(), status: 'planung' });
+            renderGrid();
+        }
+
+        async function editPhase(id) {
+            const phase = state.phases.find(p => p.id === id);
+            if (!phase) return;
+            const newName = await customPrompt("Phase umbenennen:", phase.name);
+            if (newName && newName.trim() !== '') {
+                phase.name = newName.trim();
+                renderGrid();
+            }
+        }
+
+        async function deletePhase(id) {
+            if (state.phases.length <= 1) {
+                alert("Es muss mindestens eine Phase vorhanden sein.");
+                return;
+            }
+            if (await customConfirm("Phase wirklich löschen?")) {
+                state.phases = state.phases.filter(p => p.id !== id);
+                renderGrid();
+            }
+        }
+
+        function movePhase(index, dir) {
+            if (dir === -1 && index > 0) {
+                const temp = state.phases[index];
+                state.phases[index] = state.phases[index - 1];
+                state.phases[index - 1] = temp;
+                renderGrid();
+            } else if (dir === 1 && index < state.phases.length - 1) {
+                const temp = state.phases[index];
+                state.phases[index] = state.phases[index + 1];
+                state.phases[index + 1] = temp;
+                renderGrid();
+            }
+        }
+
+        async function addLane() {
+            const name = await customPrompt("Name der neuen Lane:");
+            if (!name || name.trim() === '') return;
+            const newId = 'lane-' + Date.now();
+            state.lanes.push({ id: newId, name: name.trim() });
+            renderGrid();
+        }
+
+        async function editLane(id) {
+            const lane = state.lanes.find(l => l.id === id);
+            if (!lane) return;
+            const newName = await customPrompt("Lane umbenennen:", lane.name);
+            if (newName && newName.trim() !== '') {
+                lane.name = newName.trim();
+                renderGrid();
+            }
+        }
+
+        async function deleteLane(id) {
+            if (state.lanes.length <= 1) {
+                alert("Es muss mindestens eine Lane vorhanden sein.");
+                return;
+            }
+            if (await customConfirm("Lane wirklich löschen?")) {
+                state.lanes = state.lanes.filter(l => l.id !== id);
+                renderGrid();
+            }
+        }
+
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(state, null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", "service_blueprint.json");
+            document.body.appendChild(dlAnchorElem);
+            dlAnchorElem.click();
+            document.body.removeChild(dlAnchorElem);
+        }
+
+        function importJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const importedState = JSON.parse(e.target.result);
+                    if (importedState && importedState.phases && importedState.lanes && importedState.cells) {
+                        state = importedState;
+                        renderGrid();
+                    } else {
+                        throw new Error("Invalid structure");
+                    }
+                } catch (error) {
+                    alert("Fehler beim Laden der Datei: Format ungültig");
+                }
+                // Reset file input so the same file can be selected again
+                event.target.value = "";
+            };
+            reader.readAsText(file);
+        }
+
+        async function addCard(phaseId, laneId) {
+            const text = await customPrompt("Text für neue Card:");
+            if (!text || text.trim() === '') return;
+            const key = phaseId + '_' + laneId;
+            if (!state.cells[key]) state.cells[key] = [];
+            state.cells[key].push({ id: 'card-' + Date.now(), text: text.trim().replace(/\n/g, '<br>') });
+            renderGrid();
+        }
+
+        async function editCard(phaseId, laneId, cardId, event) {
+            event.stopPropagation();
+            const key = phaseId + '_' + laneId;
+            const cell = state.cells[key];
+            if (!cell) return;
+            const card = cell.find(c => c.id === cardId);
+            if (!card) return;
+            const newText = await customPrompt("Text bearbeiten:", card.text.replace(/<br>/g, '\n'));
+            if (newText !== null && newText.trim() !== '') {
+                card.text = newText.trim().replace(/\n/g, '<br>');
+                renderGrid();
+            }
+        }
+
+        async function deleteCard(phaseId, laneId, cardId, event) {
+            event.stopPropagation();
+            if (await customConfirm("Card löschen?")) {
+                const key = phaseId + '_' + laneId;
+                state.cells[key] = state.cells[key].filter(c => c.id !== cardId);
+                renderGrid();
+            }
+        }
+
+
+        function togglePhaseStatus(id) {
+            const phase = state.phases.find(p => p.id === id);
+            if (!phase) return;
+            const cycle = { 'planung': 'todo', 'todo': 'inprogress', 'inprogress': 'done', 'done': 'planung' };
+            phase.status = cycle[phase.status] || 'planung';
+            renderGrid();
+        }
+
+        function renderGrid() {
+            // Update CSS Grid columns based on phases count + 1 for Add Phase column
+            gridEl.style.gridTemplateColumns = `250px repeat(${state.phases.length + 1}, 300px)`;
+            gridEl.innerHTML = '';
+
+            // --- Row 1: Headers ---
+            // Top Left Corner
+            const corner = document.createElement('div');
+            corner.className = 'bp-corner';
+            corner.innerHTML = ``; // Empty placeholder as requested
+            gridEl.appendChild(corner);
+
+            // Phase Headers
+            state.phases.forEach((phase, index) => {
+                const pHeader = document.createElement('div');
+                pHeader.className = 'bp-phase-header';
+
+                // Defaults (Planung)
+                let bgColor = "#1e2a3a";
+                let badgeText = "Planung";
+                let badgeColor = "#7a91ab";
+                let badgeBg = "rgba(122, 145, 171, 0.1)";
+
+                if (phase.status === 'todo') {
+                    bgColor = "#4a2e0f";
+                    badgeColor = "#f97316";
+                    badgeBg = "rgba(249, 115, 22, 0.1)";
+                    badgeText = "To Do";
+                } else if (phase.status === 'inprogress') {
+                    bgColor = "#3a3010";
+                    badgeColor = "#eab308";
+                    badgeBg = "rgba(234, 179, 8, 0.1)";
+                    badgeText = "In Arbeit";
+                } else if (phase.status === 'done') {
+                    bgColor = "#0f3320";
+                    badgeColor = "#22c55e";
+                    badgeBg = "rgba(34, 197, 94, 0.1)";
+                    badgeText = "Abgeschlossen";
+                }
+
+                pHeader.style.background = bgColor;
+                pHeader.style.color = "var(--text)";
+                pHeader.style.borderBottom = "1px solid var(--border)";
+
+                // Inherit text colors to the buttons
+                pHeader.style.setProperty('--text-muted', "rgba(255,255,255,0.6)");
+                pHeader.style.setProperty('--text', "var(--text)");
+                pHeader.style.setProperty('--bg-3', 'rgba(0,0,0,0.2)'); // subtle hover background for icon buttons
+
+                pHeader.innerHTML = `
+                    <div class="bp-phase-header-title">
+                        <span>${phase.name}</span>
+                        <div class="phase-controls">
+                            ${index > 0 ? `<button class="icon-btn" title="Nach links verschieben" onclick="movePhase(${index}, -1)">←</button>` : ''}
+                            ${index < state.phases.length - 1 ? `<button class="icon-btn" title="Nach rechts verschieben" onclick="movePhase(${index}, 1)">→</button>` : ''}
+                            <button class="icon-btn" title="Bearbeiten" onclick="editPhase('${phase.id}')">✏️</button>
+                            ${state.phases.length > 1 ? `<button class="icon-btn" title="Löschen" onclick="deletePhase('${phase.id}')">🗑️</button>` : `<button class="icon-btn" disabled style="opacity: 0.3; cursor: not-allowed;" title="Letzte Phase kann nicht gelöscht werden">🗑️</button>`}
+                        </div>
+                    </div>
+                    <div class="status-badge" onclick="togglePhaseStatus('${phase.id}')" title="Klicken um Status zu ändern" style="--badge-text: ${badgeColor}; --badge-border: ${badgeColor}; --badge-bg: ${badgeBg};">
+                        ${badgeText} <span class="status-chevron">▼</span>
+                    </div>
+                `;
+                gridEl.appendChild(pHeader);
+            });
+
+            // Add Phase Header Column
+            const addPhaseHeader = document.createElement('div');
+            addPhaseHeader.className = 'bp-phase-header';
+            addPhaseHeader.style.background = 'var(--bg-2)';
+            addPhaseHeader.style.borderBottom = '1px solid var(--border)';
+            addPhaseHeader.style.display = 'flex';
+            addPhaseHeader.style.alignItems = 'center';
+            addPhaseHeader.style.justifyContent = 'center';
+            addPhaseHeader.innerHTML = `<button class="btn" style="text-align: center;" onclick="addPhase()">+ Phase hinzufügen</button>`;
+            gridEl.appendChild(addPhaseHeader);
+
+            // --- Lanes & Cells ---
+            // Mapping for Lane colors
+            const laneColorMapping = {
+                'Physical Evidence': { header: '#1e4a7a', cell: '#0f2a4a' },
+                'Customer Actions':  { header: '#1e5a46', cell: '#0f3028' },
+                'Frontstage':        { header: '#4a3a78', cell: '#2a2048' },
+                'Backstage':         { header: '#5a3838', cell: '#321e1e' },
+                'Support Processes': { header: '#464620', cell: '#282814' },
+                'Pain Points':       { header: '#5a2828', cell: '#321414' },
+                'Chancen':           { header: '#1e4a32', cell: '#102818' }
+            };
+
+            state.lanes.forEach(lane => {
+                const colors = laneColorMapping[lane.name] || { header: '#2a3a4a', cell: '#162030' };
+
+                // Lane Label
+                const lHeader = document.createElement('div');
+                lHeader.className = 'bp-lane-header';
+                lHeader.style.background = colors.header;
+                lHeader.innerHTML = `
+                    <span class="lane-title">${lane.name}</span>
+                    <div class="lane-controls">
+                        <button class="icon-btn" title="Bearbeiten" onclick="editLane('${lane.id}')">✏️</button>
+                        ${state.lanes.length > 1 ? `<button class="icon-btn" title="Löschen" onclick="deleteLane('${lane.id}')">🗑️</button>` : `<button class="icon-btn" disabled style="opacity: 0.3; cursor: not-allowed;" title="Letzte Lane kann nicht gelöscht werden">🗑️</button>`}
+                    </div>
+                `;
+                gridEl.appendChild(lHeader);
+
+                // Cells for this lane across all phases
+                state.phases.forEach(phase => {
+                    const cell = document.createElement('div');
+                    cell.className = 'bp-cell';
+                    cell.style.background = colors.cell;
+                    cell.dataset.phaseId = phase.id;
+                    cell.dataset.laneId = lane.id;
+
+                    const cellKey = phase.id + '_' + lane.id;
+                    const cards = state.cells[cellKey] || [];
+
+                    let cardsHtml = '';
+                    cards.forEach(card => {
+                        cardsHtml += `
+                            <div class="bp-item" onclick="editCard('${phase.id}', '${lane.id}', '${card.id}', event)">
+                                <span class="bp-item-content">${card.text}</span>
+                                <div class="bp-item-controls">
+                                    <button class="icon-btn" title="Löschen" onclick="deleteCard('${phase.id}', '${lane.id}', '${card.id}', event)">🗑️</button>
+                                </div>
+                            </div>
+                        `;
+                    });
+
+                    cell.innerHTML = `
+                        ${cardsHtml}
+                        <div class="card-placeholder" onclick="addCard('${phase.id}', '${lane.id}')">+ Eintrag hinzufügen</div>
+                    `;
+                    gridEl.appendChild(cell);
+                });
+
+                // Add empty cell for the "Add Phase" column layout stability
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'bp-cell';
+                emptyCell.style.background = 'var(--bg)';
+                gridEl.appendChild(emptyCell);
+            });
+
+            // Add Row for "Add Lane" button at the bottom left
+            const addLaneCorner = document.createElement('div');
+            addLaneCorner.className = 'bp-lane-header'; // Uses left sticky but no vertical sticky
+            addLaneCorner.style.borderBottom = 'none';
+            addLaneCorner.style.borderRight = 'none';
+            addLaneCorner.style.background = 'var(--bg-2)'; // Match standard lane header background
+            addLaneCorner.innerHTML = `
+                <button class="btn" style="width: 100%; justify-content: center;" onclick="addLane()">+ Lane hinzufügen</button>
+            `;
+            gridEl.appendChild(addLaneCorner);
+
+            // Empty cells for the rest of the bottom row to maintain grid integrity
+            for (let i = 0; i < state.phases.length + 1; i++) {
+                const emptyCell = document.createElement('div');
+                emptyCell.className = 'bp-cell';
+                emptyCell.style.background = 'var(--bg)'; // Same as other cells so we don't bleed through the grid gap color
+                gridEl.appendChild(emptyCell);
+            }
+        }
+
+        // Initialize empty state
+        renderGrid();
+
+    </script>
+</body>
+
+</html>
