@@ -164,6 +164,12 @@
             border-color: var(--accent);
         }
 
+        .btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+        }
+
         .btn-primary {
             background: var(--sky-blue);
             color: #020617;
@@ -301,6 +307,13 @@
         .icon-btn:hover {
             color: var(--text);
             background: var(--bg-3);
+        }
+
+        .icon-btn svg {
+            width: 18px;
+            height: 18px;
+            fill: currentColor;
+            display: block;
         }
 
         /* Lane Labels (left column) */
@@ -487,6 +500,34 @@
 
 <body>
 
+    <!-- SVG Icons Sprite -->
+    <svg xmlns="http://www.w3.org/2000/svg" style="display: none;">
+        <symbol id="icon-edit" viewBox="0 -960 960 960">
+            <path d="M200-200h57l391-391-57-57-391 391v57Zm-80 80v-170l528-527q12-11 26.5-17t30.5-6q16 0 31 6t26 18l55 56q12 11 17.5 26t5.5 30q0 16-5.5 30.5T817-647L290-120H120Zm640-584-56-56 56 56Zm-141 85-28-29 57 57-29-28Z"/>
+        </symbol>
+        <symbol id="icon-delete" viewBox="0 -960 960 960">
+            <path d="M280-120q-33 0-56.5-23.5T200-200v-520h-40v-80h200v-40h240v40h200v80h-40v520q0 33-23.5 56.5T680-120H280Zm400-600H280v520h400v-520ZM360-280h80v-360h-80v360Zm160 0h80v-360h-80v360ZM280-720v520-520Z"/>
+        </symbol>
+        <symbol id="icon-add" viewBox="0 -960 960 960">
+            <path d="M440-440H200v-80h240v-240h80v240h240v80H520v240h-80v-240Z"/>
+        </symbol>
+        <symbol id="icon-upload" viewBox="0 -960 960 960">
+            <path d="M440-320v-326L336-542l-56-58 200-200 200 200-56 58-104-104v326h-80ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+        </symbol>
+        <symbol id="icon-download" viewBox="0 -960 960 960">
+            <path d="M480-320 280-520l56-58 104 104v-326h80v326l104-104 56 58-200 200ZM240-160q-33 0-56.5-23.5T160-240v-120h80v120h480v-120h80v120q0 33-23.5 56.5T720-160H240Z"/>
+        </symbol>
+        <symbol id="icon-arrow-left" viewBox="0 -960 960 960">
+            <path d="m313-440 224 224-57 56-320-320 320-320 57 56-224 224h487v80H313Z"/>
+        </symbol>
+        <symbol id="icon-arrow-right" viewBox="0 -960 960 960">
+            <path d="M647-440H160v-80h487L423-744l57-56 320 320-320 320-57-56 224-224Z"/>
+        </symbol>
+        <symbol id="icon-expand-more" viewBox="0 -960 960 960">
+            <path d="M480-345 240-585l56-56 184 184 184-184 56 56-240 240Z"/>
+        </symbol>
+    </svg>
+
     <div class="modal-overlay" id="modalOverlay">
         <div class="modal-box">
             <div class="modal-title" id="modalTitle">Titel</div>
@@ -505,9 +546,15 @@
             <span class="app-name">Blue<span class="app-name-accent">DESK</span></span>
         </div>
         <div class="header-actions">
-            <label class="btn" for="jsonUpload" style="cursor: pointer; margin-bottom: 0;">JSON Laden</label>
+            <label class="btn" for="jsonUpload" style="cursor: pointer; margin-bottom: 0;">
+                <svg><use href="#icon-upload"></use></svg>
+                JSON Laden
+            </label>
             <input type="file" id="jsonUpload" accept=".json" style="display: none;" onchange="importJSON(event)">
-            <button class="btn btn-primary" onclick="exportJSON()">JSON Export</button>
+            <button class="btn btn-primary" onclick="exportJSON()">
+                <svg><use href="#icon-download"></use></svg>
+                JSON Export
+            </button>
         </div>
     </header>
 
@@ -806,14 +853,14 @@
                     <div class="bp-phase-header-title">
                         <span>${phase.name}</span>
                         <div class="phase-controls">
-                            ${index > 0 ? `<button class="icon-btn" title="Nach links verschieben" onclick="movePhase(${index}, -1)">←</button>` : ''}
-                            ${index < state.phases.length - 1 ? `<button class="icon-btn" title="Nach rechts verschieben" onclick="movePhase(${index}, 1)">→</button>` : ''}
-                            <button class="icon-btn" title="Bearbeiten" onclick="editPhase('${phase.id}')">✏️</button>
-                            ${state.phases.length > 1 ? `<button class="icon-btn" title="Löschen" onclick="deletePhase('${phase.id}')">🗑️</button>` : `<button class="icon-btn" disabled style="opacity: 0.3; cursor: not-allowed;" title="Letzte Phase kann nicht gelöscht werden">🗑️</button>`}
+                            ${index > 0 ? `<button class="icon-btn" title="Nach links verschieben" onclick="movePhase(${index}, -1)"><svg><use href="#icon-arrow-left"></use></svg></button>` : ''}
+                            ${index < state.phases.length - 1 ? `<button class="icon-btn" title="Nach rechts verschieben" onclick="movePhase(${index}, 1)"><svg><use href="#icon-arrow-right"></use></svg></button>` : ''}
+                            <button class="icon-btn" title="Bearbeiten" onclick="editPhase('${phase.id}')"><svg><use href="#icon-edit"></use></svg></button>
+                            ${state.phases.length > 1 ? `<button class="icon-btn" title="Löschen" onclick="deletePhase('${phase.id}')"><svg><use href="#icon-delete"></use></svg></button>` : `<button class="icon-btn" disabled style="opacity: 0.3; cursor: not-allowed;" title="Letzte Phase kann nicht gelöscht werden"><svg><use href="#icon-delete"></use></svg></button>`}
                         </div>
                     </div>
                     <div class="status-badge" onclick="togglePhaseStatus('${phase.id}')" title="Klicken um Status zu ändern" style="--badge-text: ${badgeColor}; --badge-border: ${badgeColor}; --badge-bg: ${badgeBg};">
-                        ${badgeText} <span class="status-chevron">▼</span>
+                        ${badgeText} <svg style="width:14px; height:14px; margin-left:2px;"><use href="#icon-expand-more"></use></svg>
                     </div>
                 `;
                 gridEl.appendChild(pHeader);
@@ -827,7 +874,11 @@
             addPhaseHeader.style.display = 'flex';
             addPhaseHeader.style.alignItems = 'center';
             addPhaseHeader.style.justifyContent = 'center';
-            addPhaseHeader.innerHTML = `<button class="btn" style="text-align: center;" onclick="addPhase()">+ Phase hinzufügen</button>`;
+            addPhaseHeader.innerHTML = `
+                <button class="btn" style="text-align: center;" onclick="addPhase()">
+                    <svg><use href="#icon-add"></use></svg>
+                    Phase hinzufügen
+                </button>`;
             gridEl.appendChild(addPhaseHeader);
 
             // --- Lanes & Cells ---
@@ -852,8 +903,8 @@
                 lHeader.innerHTML = `
                     <span class="lane-title">${lane.name}</span>
                     <div class="lane-controls">
-                        <button class="icon-btn" title="Bearbeiten" onclick="editLane('${lane.id}')">✏️</button>
-                        ${state.lanes.length > 1 ? `<button class="icon-btn" title="Löschen" onclick="deleteLane('${lane.id}')">🗑️</button>` : `<button class="icon-btn" disabled style="opacity: 0.3; cursor: not-allowed;" title="Letzte Lane kann nicht gelöscht werden">🗑️</button>`}
+                        <button class="icon-btn" title="Bearbeiten" onclick="editLane('${lane.id}')"><svg><use href="#icon-edit"></use></svg></button>
+                        ${state.lanes.length > 1 ? `<button class="icon-btn" title="Löschen" onclick="deleteLane('${lane.id}')"><svg><use href="#icon-delete"></use></svg></button>` : `<button class="icon-btn" disabled style="opacity: 0.3; cursor: not-allowed;" title="Letzte Lane kann nicht gelöscht werden"><svg><use href="#icon-delete"></use></svg></button>`}
                     </div>
                 `;
                 gridEl.appendChild(lHeader);
@@ -875,7 +926,7 @@
                             <div class="bp-item" onclick="editCard('${phase.id}', '${lane.id}', '${card.id}', event)">
                                 <span class="bp-item-content">${card.text}</span>
                                 <div class="bp-item-controls">
-                                    <button class="icon-btn" title="Löschen" onclick="deleteCard('${phase.id}', '${lane.id}', '${card.id}', event)">🗑️</button>
+                                    <button class="icon-btn" title="Löschen" onclick="deleteCard('${phase.id}', '${lane.id}', '${card.id}', event)"><svg style="width:14px; height:14px;"><use href="#icon-delete"></use></svg></button>
                                 </div>
                             </div>
                         `;
@@ -883,7 +934,10 @@
 
                     cell.innerHTML = `
                         ${cardsHtml}
-                        <div class="card-placeholder" onclick="addCard('${phase.id}', '${lane.id}')">+ Eintrag hinzufügen</div>
+                        <div class="card-placeholder" onclick="addCard('${phase.id}', '${lane.id}')">
+                            <svg style="width:16px; height:16px; vertical-align: middle; margin-right: 4px; display: inline-block;"><use href="#icon-add"></use></svg>
+                            Eintrag hinzufügen
+                        </div>
                     `;
                     gridEl.appendChild(cell);
                 });
@@ -902,7 +956,10 @@
             addLaneCorner.style.borderRight = 'none';
             addLaneCorner.style.background = 'var(--bg-2)'; // Match standard lane header background
             addLaneCorner.innerHTML = `
-                <button class="btn" style="width: 100%; justify-content: center;" onclick="addLane()">+ Lane hinzufügen</button>
+                <button class="btn" style="width: 100%; justify-content: center;" onclick="addLane()">
+                    <svg><use href="#icon-add"></use></svg>
+                    Lane hinzufügen
+                </button>
             `;
             gridEl.appendChild(addLaneCorner);
 
